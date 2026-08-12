@@ -15,6 +15,7 @@ public class CatalogController : Controller
     [HttpGet("/catalog")]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
+        ViewData["Canonical"] = $"{Request.Scheme}://{Request.Host}/catalog";
         var items = await _products.GetAllPublishedAsync(ct);
         return View(items.OrderBy(p => p.CreatedAt).ToList());
     }

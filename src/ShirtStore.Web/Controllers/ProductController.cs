@@ -37,6 +37,7 @@ public class ProductController : Controller
         ViewData["Description"] = product.SeoDescription;
         ViewData["Canonical"]   = product.CanonicalUrl;
         ViewData["NoIndex"]     = product.NoIndex;
+        ViewData["OgType"]      = "product";
 
         return View(vm);
     }

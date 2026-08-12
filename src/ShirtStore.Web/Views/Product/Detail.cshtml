@@ -5,6 +5,12 @@
     ViewData["Canonical"] = Model.Product.CanonicalUrl;
     ViewData["NoIndex"] = Model.Product.NoIndex;
     ViewData["OgImage"] = Model.Product.ImageUrl;
+    var siteUrl = $"{Context.Request.Scheme}://{Context.Request.Host}";
+    var productImage = Model.Product.ImageUrl;
+    if (!string.IsNullOrWhiteSpace(productImage) && !Uri.TryCreate(productImage, UriKind.Absolute, out _))
+    {
+        productImage = $"{siteUrl}/{productImage.TrimStart('/')}";
+    }
 }
 
 <nav class="breadcrumbs">
@@ -85,7 +91,7 @@
         "@@type": "Product",
         "name": "@Model.Product.Name",
         "description": "@Model.Product.Description",
-        "image": "@Model.Product.ImageUrl",
+        "image": "@productImage",
         "sku": "@(Model.Variants.FirstOrDefault()?.Sku ?? "")",
         "brand": { "@@type": "Brand", "name": "Peter Milk" },
         "offers": {

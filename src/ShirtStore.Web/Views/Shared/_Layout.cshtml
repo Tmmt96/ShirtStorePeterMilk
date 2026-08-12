@@ -2,12 +2,26 @@
 @using ShirtStore.Domain.Interfaces
 @inject ICartRepository CartRepository
 @{
+    var siteUrl     = $"{Context.Request.Scheme}://{Context.Request.Host}";
     var title       = ViewData["Title"] as string ?? "Peter Milk";
-    var description = ViewData["Description"] as string ?? "";
-    var canonical   = ViewData["Canonical"] as string ?? $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}{Context.Request.QueryString}";
+    var description = ViewData["Description"] as string ?? "Camisolas portuguesas Peter Milk, com design original e envio para todo o país.";
+    var canonical   = ViewData["Canonical"] as string;
+    if (string.IsNullOrWhiteSpace(canonical))
+    {
+        canonical = $"{siteUrl}{Context.Request.Path}{Context.Request.QueryString}";
+    }
+    else if (!Uri.TryCreate(canonical, UriKind.Absolute, out _))
+    {
+        canonical = $"{siteUrl}/{canonical.TrimStart('/')}";
+    }
     var isIdentityPage = Context.Request.Path.StartsWithSegments("/Identity");
     var noIndex     = (ViewData["NoIndex"] as bool? ?? false) || isIdentityPage;
-    var ogImage     = ViewData["OgImage"] as string ?? "";
+    var ogType      = ViewData["OgType"] as string ?? "website";
+    var ogImage     = ViewData["OgImage"] as string ?? "/images/catalog/catalog-page-01.png";
+    if (!Uri.TryCreate(ogImage, UriKind.Absolute, out _))
+    {
+        ogImage = $"{siteUrl}/{ogImage.TrimStart('/')}";
+    }
     var userId      = User.FindFirstValue(ClaimTypes.NameIdentifier);
     var cartToken   = Context.Request.Cookies["cart_token"];
     var isManagePage = Context.Request.Path.StartsWithSegments("/Identity/Account/Manage");
@@ -21,7 +35,7 @@
     var cartCount = headerCart?.Items.Sum(item => item.Quantity) ?? 0;
 }
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-PT">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -40,17 +54,17 @@
     <!-- Open Graph -->
     <meta property="og:title" content="@title" />
     <meta property="og:description" content="@description" />
-    @if (!string.IsNullOrEmpty(ogImage))
-    {
-        <meta property="og:image" content="@ogImage" />
-    }
-    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Peter Milk" />
+    <meta property="og:image" content="@ogImage" />
+    <meta property="og:image:alt" content="Peter Milk — camisolas portuguesas" />
+    <meta property="og:type" content="@ogType" />
     <meta property="og:url" content="@canonical" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="@title" />
     <meta name="twitter:description" content="@description" />
+    <meta name="twitter:image" content="@ogImage" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
