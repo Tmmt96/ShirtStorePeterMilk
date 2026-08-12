@@ -1,0 +1,100 @@
+@model ShirtStore.Web.Controllers.ProductDetailViewModel
+@{
+    ViewData["Title"] = Model.Product.SeoTitle;
+    ViewData["Description"] = Model.Product.SeoDescription;
+    ViewData["Canonical"] = Model.Product.CanonicalUrl;
+    ViewData["NoIndex"] = Model.Product.NoIndex;
+    ViewData["OgImage"] = Model.Product.ImageUrl;
+}
+
+<nav class="breadcrumbs">
+    <a href="/">Início</a> &rsaquo;
+    <a href="/catalog">Catálogo</a> &rsaquo;
+    <span>@Model.Product.Name</span>
+</nav>
+
+<article class="product-detail" itemscope itemtype="https://schema.org/Product">
+    <div class="product-gallery">
+        @if (!string.IsNullOrEmpty(Model.Product.ImageUrl))
+        {
+            <img src="@Model.Product.ImageUrl" alt="@Model.Product.Name" itemprop="image" width="600" height="600" loading="eager" />
+        }
+    </div>
+
+    <div class="product-info">
+        <h1 itemprop="name">@Model.Product.Name</h1>
+
+        @if (!string.IsNullOrEmpty(Model.Product.Category))
+        {
+            <p class="category" itemprop="category">@Model.Product.Category</p>
+        }
+
+        <p class="price" itemprop="price" content="@Model.Product.BasePrice.ToString("F2")">
+            <meta itemprop="priceCurrency" content="@Model.Product.Currency" />
+            @Model.Product.BasePrice.ToString("C")
+        </p>
+
+        <div class="description" itemprop="description">
+            @Html.Raw(Model.Product.Description)
+        </div>
+
+        @if (Model.Variants.Any())
+        {
+            <form method="post" action="/cart/add" class="add-to-cart">
+                @Html.AntiForgeryToken()
+
+                <div class="variant-picker">
+                    <label for="size">Tamanho:</label>
+                    <select name="variantId" id="variant-select" required>
+                        <option value="">Seleciona…</option>
+                        @foreach (var v in Model.Variants)
+                        {
+                            var available = v.AvailableStock > 0;
+                            <option value="@v.Id"
+                                    data-price="@v.Price"
+                                    data-stock="@v.AvailableStock"
+                                    data-sku="@v.Sku"
+                                    data-size="@v.Size"
+                                    data-color="@v.Color"
+                                    disabled="@(!available)">
+                                @v.Size / @v.Color
+                                @if (!available) { <text> — Esgotado</text> }
+                                else { <text> — @v.Price.ToString("C") (@v.AvailableStock em stock)</text> }
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="stock-info" id="stock-info" aria-live="polite"></div>
+
+                <button type="submit" class="btn btn-primary btn-add-cart" id="add-cart-btn" disabled>
+                    Adicionar ao Carrinho
+                </button>
+            </form>
+        }
+        else
+        {
+            <p class="unavailable">Produto temporariamente indisponível.</p>
+        }
+    </div>
+
+    <!-- JSON-LD Product schema -->
+    <script type="application/ld+json">
+    {
+        "@@context": "https://schema.org/",
+        "@@type": "Product",
+        "name": "@Model.Product.Name",
+        "description": "@Model.Product.Description",
+        "image": "@Model.Product.ImageUrl",
+        "sku": "@(Model.Variants.FirstOrDefault()?.Sku ?? "")",
+        "brand": { "@@type": "Brand", "name": "ShirtStore" },
+        "offers": {
+            "@@type": "Offer",
+            "priceCurrency": "@Model.Product.Currency",
+            "price": "@Model.Product.BasePrice.ToString("F2")",
+            "availability": "@(Model.Variants.Any(v => v.AvailableStock > 0) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock")",
+            "url": "@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}{Context.Request.QueryString}")"
+        }
+    }
+    </script>
+</article>

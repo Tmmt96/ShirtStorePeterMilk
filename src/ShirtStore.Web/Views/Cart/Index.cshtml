@@ -1,0 +1,60 @@
+@model ShirtStore.Domain.Entities.Cart
+@{
+    ViewData["Title"] = "Carrinho";
+    ViewData["NoIndex"] = true;
+}
+
+<h1>Carrinho</h1>
+
+@if (!Model.Items.Any())
+{
+    <p>O teu carrinho está vazio. <a href="/catalog">Ver catálogo</a></p>
+    return;
+}
+
+<table class="cart-table">
+    <thead>
+        <tr>
+            <th>Produto</th>
+            <th>Variante</th>
+            <th>Preço</th>
+            <th>Qtd</th>
+            <th>Total</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model.Items)
+    {
+        <tr>
+            <td>@item.Product.Name</td>
+            <td>@item.Variant.Size / @item.Variant.Color</td>
+            <td>@item.UnitPrice.ToString("C")</td>
+            <td>@item.Quantity</td>
+            <td>@((item.UnitPrice * item.Quantity).ToString("C"))</td>
+            <td>
+                <form method="post" action="/cart/remove/@item.Id" style="display:inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-remove">✕</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@{
+    var subTotal = Model.Items.Sum(i => i.UnitPrice * i.Quantity);
+    var shipping = subTotal >= 50 ? 0 : 4.99m;
+    var total    = subTotal + shipping;
+}
+<div class="cart-summary">
+    <p>Subtotal: <strong>@subTotal.ToString("C")</strong></p>
+    <p>Portes: <strong>@(shipping == 0 ? "Grátis" : shipping.ToString("C"))</strong></p>
+    <p class="total">Total: <strong>@total.ToString("C")</strong></p>
+</div>
+
+<form method="post" action="/checkout/start">
+    @Html.AntiForgeryToken()
+    <button type="submit" class="btn btn-primary btn-checkout">Finalizar Compra</button>
+</form>

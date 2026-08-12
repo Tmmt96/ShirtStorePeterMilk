@@ -1,0 +1,30 @@
+# Build output
+bin/
+obj/
+.vs/
+[Bb]uild/
+[Bb]uild[Ll]og/
+
+# Visual Studio and Rider
+*.user
+*.userosscache
+*.suo
+*.userprefs
+.idea/
+
+# Test output
+TestResults/
+coverage/
+
+# Local runtime data
+*.db-shm
+*.db-wal
+
+# Local secrets and environment overrides
+appsettings.*.local.json
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db

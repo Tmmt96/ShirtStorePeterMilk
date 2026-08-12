@@ -1,0 +1,41 @@
+@model IReadOnlyList<ShirtStore.Domain.Entities.Product>
+@{
+    ViewData["Title"] = ViewData["NoIndex"] as bool? == true ? $"Resultados para \"{ViewData["SearchQuery"]}\"" : "Coleção de camisolas";
+    var noIndex = ViewData["NoIndex"] as bool? ?? false;
+    if (noIndex) { ViewData["NoIndex"] = true; }
+}
+
+<div class="catalog-intro">
+    <p class="eyebrow">Peter Milk / coleção 01</p>
+    @if (noIndex)
+    {
+        <h1>Resultados para<br /><span>"@ViewData["SearchQuery"]"</span></h1>
+        <a href="/catalog" class="text-link">← Ver toda a coleção</a>
+    }
+    else
+    {
+        <h1>A coleção<br /><span>que faltava.</span></h1>
+        <p>Peças em algodão pesado, pensadas e impressas em Portugal.</p>
+    }
+</div>
+
+<div class="catalog-toolbar"><span>@Model.Count design@(Model.Count == 1 ? "" : "s")</span><a href="/search?q=" class="text-link">Pesquisar <span aria-hidden="true">⌕</span></a></div>
+
+@if (!Model.Any())
+{
+    <div class="empty-state"><h2>Nada por aqui.</h2><p>Experimenta outra pesquisa ou volta à coleção.</p></div>
+    return;
+}
+
+<div class="product-grid product-grid--catalog">
+@for (var i = 0; i < Model.Count; i++)
+{
+    var p = Model[i];
+    <article class="product-card product-card--editorial">
+        <a href="/product/@p.Slug">
+            <div class="product-image-wrap"><span class="product-index">@((i + 1).ToString("00"))</span><img src="@p.ImageUrl" alt="@p.Name" loading="lazy" width="500" height="700" /></div>
+            <div class="product-card-copy"><h2>@p.Name</h2><span class="price">@p.BasePrice.ToString("C")</span></div>
+        </a>
+    </article>
+}
+</div>

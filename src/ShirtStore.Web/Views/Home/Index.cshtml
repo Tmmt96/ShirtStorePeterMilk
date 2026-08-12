@@ -1,0 +1,52 @@
+@model IReadOnlyList<ShirtStore.Domain.Entities.Product>
+@{
+    ViewData["Title"] = "Peter Milk — Camisolas com atitude";
+    ViewData["Description"] = "Camisolas portuguesas, tiragens pequenas e designs que dizem alguma coisa.";
+}
+
+<section class="home-hero">
+    <div class="hero-copy">
+        <p class="eyebrow">Coleção 01 / Peter Milk</p>
+        <h1>Veste o que<br /><span>fica na cabeça.</span></h1>
+        <p class="hero-lede">Design português, humor seco e algodão pesado. Uma primeira coleção feita para sair da gaveta.</p>
+        <div class="hero-actions">
+            <a href="/catalog" class="btn btn-primary">Ver a coleção <span aria-hidden="true">↗</span></a>
+            <a href="#featured" class="text-link">Descobrir os designs <span aria-hidden="true">↓</span></a>
+        </div>
+        <div class="hero-note"><span class="note-dot"></span> Envio grátis a partir de 50€</div>
+    </div>
+    <div class="hero-art">
+        <div class="hero-art-label">01 — edição limitada</div>
+        <img src="/images/catalog/catalog-page-01.png" alt="Camisola preta KTM Ka Tombo Moço" width="640" height="934" />
+        <div class="hero-art-stamp">PETER<br />MILK</div>
+    </div>
+</section>
+
+<section class="ticker" aria-label="Vantagens da loja">
+    <span>ALGODÃO PESADO</span><i></i><span>DESIGN PORTUGUÊS</span><i></i><span>ENVIO 2–3 DIAS</span><i></i><span>DEVOLUÇÕES 30 DIAS</span>
+</section>
+
+<section class="section-block" id="featured">
+    <div class="section-heading">
+        <div><p class="eyebrow">A primeira leva</p><h2>Escolhe o teu statement.</h2></div>
+        <a href="/catalog" class="text-link">Ver tudo <span aria-hidden="true">↗</span></a>
+    </div>
+    <div class="product-grid product-grid--home">
+    @for (var i = 0; i < Model.Count; i++)
+    {
+        var product = Model[i];
+        <article class="product-card product-card--editorial">
+            <a href="/product/@product.Slug">
+                <div class="product-image-wrap"><span class="product-index">@((i + 1).ToString("00"))</span><img src="@product.ImageUrl" alt="@product.Name" loading="lazy" width="500" height="700" /></div>
+                <div class="product-card-copy"><h3>@product.Name</h3><span class="price">@product.BasePrice.ToString("C")</span></div>
+            </a>
+        </article>
+    }
+    </div>
+</section>
+
+<section class="manifesto">
+    <p class="eyebrow">Feito para repetir</p>
+    <h2>Não é só uma camisola.<br /><em>É conversa.</em></h2>
+    <a href="/catalog" class="btn btn-dark">Entrar na loja <span aria-hidden="true">↗</span></a>
+</section>

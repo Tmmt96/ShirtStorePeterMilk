@@ -1,0 +1,20 @@
+@model ShirtStore.Domain.Entities.Order?
+@{
+    ViewData["Title"] = "Obrigado!";
+    ViewData["NoIndex"] = true;
+}
+
+<h1>Obrigado pela tua encomenda!</h1>
+
+@if (Model is not null)
+{
+    <p>Número de encomenda: <strong>@Model.OrderNumber</strong></p>
+    <p>Total: <strong>@Model.Total.ToString("C")</strong></p>
+    <p>Um email de confirmação foi enviado para <strong>@Model.CustomerEmail</strong>.</p>
+}
+else
+{
+    <p>A tua encomenda foi recebida. Receberás um email de confirmação em breve.</p>
+}
+
+<p><a href="/catalog">Continuar a comprar</a></p>
