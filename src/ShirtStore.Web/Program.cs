@@ -7,6 +7,7 @@ using ShirtStore.Infrastructure.Data;
 using ShirtStore.Web.Filters;
 using Stripe;
 
+const string StorefrontAuthenticationScheme = "PeterMilk.Identity";
 var builder = WebApplication.CreateBuilder(args);
 
 // ── JSON ──────────────────────────────────────────────────────────────────
@@ -33,8 +34,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString, sql =>
         sql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)));
 
-// ── Identity ───────────────────────────────────────────────────────────────
-builder.Services.AddIdentity<ApplicationUser, Microsoft.AspNetCore.Identity.IdentityRole>(options =>
+// ── Identity da loja ───────────────────────────────────────────────────────
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
     options.Password.RequireDigit = true;
@@ -44,17 +45,35 @@ builder.Services.AddIdentity<ApplicationUser, Microsoft.AspNetCore.Identity.Iden
     options.Password.RequireLowercase = true;
     options.User.RequireUniqueEmail = true;
 })
+.AddRoles<Microsoft.AspNetCore.Identity.IdentityRole>()
 .AddEntityFrameworkStores<AppDbContext>()
+.AddSignInManager()
 .AddDefaultUI()
 .AddDefaultTokenProviders();
 
-builder.Services.ConfigureApplicationCookie(options =>
+// O Umbraco regista o seu próprio Identity.Application para o backoffice.
+// A loja usa um esquema separado para não misturar sessões nem utilizadores.
+builder.Services.AddAuthentication(options =>
 {
+    options.DefaultAuthenticateScheme = StorefrontAuthenticationScheme;
+    options.DefaultChallengeScheme = StorefrontAuthenticationScheme;
+    options.DefaultSignInScheme = StorefrontAuthenticationScheme;
+})
+.AddCookie(StorefrontAuthenticationScheme, options =>
+{
+    options.Cookie.Name = "PeterMilk.Identity";
     options.Cookie.HttpOnly = true;
     options.ExpireTimeSpan = TimeSpan.FromDays(14);
     options.SlidingExpiration = true;
     options.LoginPath = "/Identity/Account/Login";
     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+});
+
+builder.Services.AddScoped<SignInManager<ApplicationUser>>(services =>
+{
+    var signInManager = ActivatorUtilities.CreateInstance<SignInManager<ApplicationUser>>(services);
+    signInManager.AuthenticationScheme = StorefrontAuthenticationScheme;
+    return signInManager;
 });
 
 // ── Stripe ─────────────────────────────────────────────────────────────────
@@ -77,8 +96,17 @@ builder.Services.AddScoped<ShirtStore.Domain.Interfaces.ICartRepository, ShirtSt
 builder.Services.AddScoped<ShirtStore.Domain.Interfaces.IOrderRepository, ShirtStore.Infrastructure.Data.OrderRepository>();
 builder.Services.AddScoped<ShirtStore.Domain.Interfaces.IUnitOfWork, ShirtStore.Infrastructure.Data.UnitOfWork>();
 
+// ── Umbraco CMS ───────────────────────────────────────────────────────────
+builder.CreateUmbracoBuilder()
+    .AddBackOffice()
+    .AddWebsite()
+    .AddDeliveryApi()
+    .AddComposers()
+    .Build();
+
 // ── Pipeline HTTP ──────────────────────────────────────────────────────────
 var app = builder.Build();
+await app.BootUmbracoAsync();
 
 // Auto-migrate em Development
 if (app.Environment.IsDevelopment())
@@ -149,6 +177,18 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseUmbraco()
+    .WithMiddleware(umbraco =>
+    {
+        umbraco.UseBackOffice();
+        umbraco.UseWebsite();
+    })
+    .WithEndpoints(umbraco =>
+    {
+        umbraco.UseBackOfficeEndpoints();
+        umbraco.UseWebsiteEndpoints();
+    });
 
 app.MapControllers();
 app.MapRazorPages();

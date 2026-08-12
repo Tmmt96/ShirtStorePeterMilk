@@ -19,6 +19,8 @@ coverage/
 # Local runtime data
 *.db-shm
 *.db-wal
+src/ShirtStore.Web/umbraco/Data/
+src/ShirtStore.Web/umbraco/Logs/
 
 # Local secrets and environment overrides
 appsettings.*.local.json

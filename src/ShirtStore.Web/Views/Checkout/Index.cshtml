@@ -93,14 +93,14 @@
         {
             <li>
                 <span>@item.Product.Name <small>@item.Variant.Size / @item.Variant.Color · @item.Quantity ×</small></span>
-                <strong>@((item.UnitPrice * item.Quantity).ToString("C"))</strong>
+                <strong>@((item.UnitPrice * item.Quantity).ToString("C", CultureInfo.GetCultureInfo("pt-PT")))</strong>
             </li>
         }
         </ul>
         <div class="checkout-totals">
-            <p><span>Subtotal</span><strong>@Model.SubTotal.ToString("C")</strong></p>
-            <p><span>Portes</span><strong>@(Model.Shipping == 0 ? "Grátis" : Model.Shipping.ToString("C"))</strong></p>
-            <p class="total"><span>Total</span><strong>@Model.Total.ToString("C")</strong></p>
+            <p><span>Subtotal</span><strong>@Model.SubTotal.ToString("C", CultureInfo.GetCultureInfo("pt-PT"))</strong></p>
+            <p><span>Portes</span><strong>@(Model.Shipping == 0 ? "Grátis" : Model.Shipping.ToString("C", CultureInfo.GetCultureInfo("pt-PT")))</strong></p>
+            <p class="total"><span>Total</span><strong>@Model.Total.ToString("C", CultureInfo.GetCultureInfo("pt-PT"))</strong></p>
         </div>
         <p class="checkout-note">Pagamento seguro por cartão através do Stripe.</p>
     </aside>

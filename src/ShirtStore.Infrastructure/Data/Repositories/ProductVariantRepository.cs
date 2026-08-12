@@ -13,7 +13,16 @@ public class ProductVariantRepository : IProductVariantRepository
         => _db.ProductVariants.FirstOrDefaultAsync(v => v.Id == id, ct);
 
     public Task<List<ProductVariant>> GetByProductIdAsync(Guid productId, CancellationToken ct = default)
-        => _db.ProductVariants.Where(v => v.ProductId == productId).ToListAsync(ct);
+        => _db.ProductVariants
+            .Where(variant => variant.ProductId == productId)
+            .OrderBy(variant => variant.Size == "S" ? 0
+                : variant.Size == "M" ? 1
+                : variant.Size == "L" ? 2
+                : variant.Size == "XL" ? 3
+                : 99)
+            .ThenBy(variant => variant.Size)
+            .ThenBy(variant => variant.Color)
+            .ToListAsync(ct);
 
     public Task<List<ProductVariant>> GetBySkuAsync(string sku, CancellationToken ct = default)
         => _db.ProductVariants.Where(v => v.Sku == sku).ToListAsync(ct);

@@ -10,7 +10,7 @@
 @if (Model is not null)
 {
     <p>Número de encomenda: <strong>@Model.OrderNumber</strong></p>
-    <p>Total: <strong>@Model.Total.ToString("C")</strong></p>
+    <p>Total: <strong>@Model.Total.ToString("C", CultureInfo.GetCultureInfo("pt-PT"))</strong></p>
     <p>Um email de confirmação foi enviado para <strong>@Model.CustomerEmail</strong>.</p>
 }
 else

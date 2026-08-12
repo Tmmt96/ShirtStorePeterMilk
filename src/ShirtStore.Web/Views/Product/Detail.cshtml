@@ -37,7 +37,7 @@
 
         <p class="price" itemprop="price" content="@Model.Product.BasePrice.ToString("F2")">
             <meta itemprop="priceCurrency" content="@Model.Product.Currency" />
-            @Model.Product.BasePrice.ToString("C")
+            @Model.Product.BasePrice.ToString("C", CultureInfo.GetCultureInfo("pt-PT"))
         </p>
 
         <div class="description" itemprop="description">
@@ -65,7 +65,7 @@
                                     disabled="@(!available)">
                                 @v.Size / @v.Color
                                 @if (!available) { <text> — Esgotado</text> }
-                                else { <text> — @v.Price.ToString("C") (@v.AvailableStock em stock)</text> }
+                                else { <text> — @v.Price.ToString("C", CultureInfo.GetCultureInfo("pt-PT")) (@v.AvailableStock em stock)</text> }
                             </option>
                         }
                     </select>

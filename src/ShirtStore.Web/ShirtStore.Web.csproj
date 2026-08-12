@@ -22,6 +22,8 @@
     <PackageReference Include="Stripe.net" Version="44.5.0" />
     <!-- Email -->
     <PackageReference Include="Mailjet.Api" Version="2.0.0" />
+    <PackageReference Include="Umbraco.Cms" Version="17.6.0" />
+    <PackageReference Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="17.6.0" />
   </ItemGroup>
 
 </Project>

@@ -38,7 +38,7 @@
         <tr>
             <td data-label="Produto">@item.Product.Name</td>
             <td data-label="Variante">@item.Variant.Size / @item.Variant.Color</td>
-            <td data-label="Preço">@item.UnitPrice.ToString("C")</td>
+            <td data-label="Preço">@item.UnitPrice.ToString("C", CultureInfo.GetCultureInfo("pt-PT"))</td>
             <td data-label="Quantidade">
                 <form method="post" action="/cart/update/@item.Id" class="cart-quantity-form">
                     @Html.AntiForgeryToken()
@@ -47,7 +47,7 @@
                     <button type="submit" class="sr-only">Actualizar quantidade</button>
                 </form>
             </td>
-            <td data-label="Total">@((item.UnitPrice * item.Quantity).ToString("C"))</td>
+            <td data-label="Total">@((item.UnitPrice * item.Quantity).ToString("C", CultureInfo.GetCultureInfo("pt-PT")))</td>
             <td data-label="">
                 <form method="post" action="/cart/remove/@item.Id" style="display:inline">
                     @Html.AntiForgeryToken()
@@ -66,9 +66,9 @@
     var total    = subTotal + shipping;
 }
 <div class="cart-summary">
-    <p>Subtotal: <strong>@subTotal.ToString("C")</strong></p>
-    <p>Portes: <strong>@(shipping == 0 ? "Grátis" : shipping.ToString("C"))</strong></p>
-    <p class="total">Total: <strong>@total.ToString("C")</strong></p>
+    <p>Subtotal: <strong>@subTotal.ToString("C", CultureInfo.GetCultureInfo("pt-PT"))</strong></p>
+    <p>Portes: <strong>@(shipping == 0 ? "Grátis" : shipping.ToString("C", CultureInfo.GetCultureInfo("pt-PT")))</strong></p>
+    <p class="total">Total: <strong>@total.ToString("C", CultureInfo.GetCultureInfo("pt-PT"))</strong></p>
 </div>
 
 <a href="/checkout" class="btn btn-primary btn-checkout">Finalizar Compra</a>
