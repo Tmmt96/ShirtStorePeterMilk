@@ -87,7 +87,7 @@
         "description": "@Model.Product.Description",
         "image": "@Model.Product.ImageUrl",
         "sku": "@(Model.Variants.FirstOrDefault()?.Sku ?? "")",
-        "brand": { "@@type": "Brand", "name": "ShirtStore" },
+        "brand": { "@@type": "Brand", "name": "Peter Milk" },
         "offers": {
             "@@type": "Offer",
             "priceCurrency": "@Model.Product.Currency",
@@ -98,3 +98,29 @@
     }
     </script>
 </article>
+
+@section Scripts {
+    <script>
+        (() => {
+            const select = document.getElementById('variant-select');
+            const button = document.getElementById('add-cart-btn');
+            const stockInfo = document.getElementById('stock-info');
+
+            if (!select || !button) return;
+
+            const updateAvailability = () => {
+                const option = select.options[select.selectedIndex];
+                const stock = Number(option?.dataset.stock || 0);
+                const available = Boolean(select.value) && stock > 0;
+
+                button.disabled = !available;
+                if (stockInfo) {
+                    stockInfo.textContent = available ? `${stock} unidades disponíveis` : '';
+                }
+            };
+
+            select.addEventListener('change', updateAvailability);
+            updateAvailability();
+        })();
+    </script>
+}

@@ -31,26 +31,74 @@ public class CartController : Controller
 
         var cart = await GetOrCreateCartAsync(ct);
         var variant = await _uow.Variants.GetByIdAsync(variantId, ct);
-        if (variant is null || !variant.IsActive)
+        if (variant is null || !variant.IsActive || variant.AvailableStock < 1)
             return BadRequest("Variante não encontrada.");
 
         var existing = cart.Items.FirstOrDefault(i => i.ProductVariantId == variantId);
         if (existing is not null)
         {
+            if (existing.Quantity + quantity > variant.AvailableStock)
+            {
+                TempData["CartError"] = $"Só existem {variant.AvailableStock} unidades disponíveis.";
+                return RedirectToAction(nameof(Index));
+            }
+
             existing.Quantity += quantity;
+            existing.UnitPrice = variant.Price;
         }
         else
         {
-            cart.Items.Add(new CartItem
+            if (quantity > variant.AvailableStock)
+            {
+                TempData["CartError"] = $"Só existem {variant.AvailableStock} unidades disponíveis.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var cartItem = new CartItem
             {
                 CartId           = cart.Id,
                 ProductId        = variant.ProductId,
                 ProductVariantId = variantId,
                 Quantity         = quantity,
                 UnitPrice        = variant.Price
-            });
+            };
+            cart.Items.Add(cartItem);
+            _uow.Carts.AddItem(cartItem);
         }
 
+        cart.UpdatedAt = DateTime.UtcNow;
+        await _uow.SaveChangesAsync(ct);
+        return RedirectToAction(nameof(Index));
+    }
+
+    /// <summary>Actualiza a quantidade de um item do carrinho.</summary>
+    [HttpPost("/cart/update/{itemId:guid}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Update(Guid itemId, [FromForm] int quantity, CancellationToken ct)
+    {
+        var cart = await GetOrCreateCartAsync(ct);
+        var item = cart.Items.FirstOrDefault(i => i.Id == itemId);
+        if (item is null)
+            return NotFound();
+
+        if (quantity < 1)
+        {
+            TempData["CartError"] = "A quantidade mínima é 1. Para remover o artigo, usa o botão de remoção.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var variant = await _uow.Variants.GetByIdAsync(item.ProductVariantId, ct);
+        if (variant is null || !variant.IsActive)
+            return BadRequest("Variante não encontrada.");
+
+        if (quantity > variant.AvailableStock)
+        {
+            TempData["CartError"] = $"Só existem {variant.AvailableStock} unidades disponíveis.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        item.Quantity = quantity;
+        item.UnitPrice = variant.Price;
         cart.UpdatedAt = DateTime.UtcNow;
         await _uow.SaveChangesAsync(ct);
         return RedirectToAction(nameof(Index));

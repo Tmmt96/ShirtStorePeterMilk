@@ -1,9 +1,24 @@
+@using System.Security.Claims
+@using ShirtStore.Domain.Interfaces
+@inject ICartRepository CartRepository
 @{
-    var title       = ViewData["Title"] as string ?? "ShirtStore";
+    var title       = ViewData["Title"] as string ?? "Peter Milk";
     var description = ViewData["Description"] as string ?? "";
     var canonical   = ViewData["Canonical"] as string ?? $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}{Context.Request.QueryString}";
-    var noIndex     = ViewData["NoIndex"] as bool? ?? false;
+    var isIdentityPage = Context.Request.Path.StartsWithSegments("/Identity");
+    var noIndex     = (ViewData["NoIndex"] as bool? ?? false) || isIdentityPage;
     var ogImage     = ViewData["OgImage"] as string ?? "";
+    var userId      = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    var cartToken   = Context.Request.Cookies["cart_token"];
+    var isManagePage = Context.Request.Path.StartsWithSegments("/Identity/Account/Manage");
+    var headerCart  = !string.IsNullOrWhiteSpace(userId)
+        ? await CartRepository.GetByUserIdAsync(userId, Context.RequestAborted)
+        : null;
+    if (headerCart is null && !string.IsNullOrWhiteSpace(cartToken))
+    {
+        headerCart = await CartRepository.GetByTokenAsync(cartToken, Context.RequestAborted);
+    }
+    var cartCount = headerCart?.Items.Sum(item => item.Quantity) ?? 0;
 }
 <!DOCTYPE html>
 <html lang="pt">
@@ -41,21 +56,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" />
 
-    <!-- Favicon placeholder -->
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/Identity/favicon.ico" />
 
     <!-- CSS -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @if (isIdentityPage)
+    {
+        <script src="/Identity/lib/jquery/dist/jquery.js"></script>
+    }
     @await RenderSectionAsync("Head", required: false)
 </head>
-<body>
+<body class="@(isIdentityPage ? "identity-page" : string.Empty)@(isManagePage ? " manage-page" : string.Empty)">
     <div class="promo-bar">ENVIO GRÁTIS A PARTIR DE 50€ <span>·</span> 30 DIAS PARA DEVOLVER</div>
     <header class="site-header">
         <div class="header-main">
-            <button class="mobile-menu" type="button" aria-label="Abrir menu">☰</button>
-            <a href="/" class="logo">shirt<span>store</span><b>.</b></a>
-            <nav class="primary-nav" aria-label="Navegação principal">
-                <a href="/catalog">Camisolas</a>
+            <button class="mobile-menu" type="button" aria-label="Abrir menu" aria-controls="primary-navigation" aria-expanded="false">☰</button>
+            <a href="/" class="logo">peter<span>milk</span><b>.</b></a>
+            <nav id="primary-navigation" class="primary-nav" aria-label="Navegação principal">
+                <a href="/catalog">Produtos</a>
                 <a href="/catalog?category=colecao">Coleções</a>
                 <a href="#manifesto">Sobre nós</a>
             </nav>
@@ -63,13 +81,21 @@
                 <a href="/search?q=" class="icon-button" aria-label="Pesquisar">⌕</a>
                 @if (User.Identity?.IsAuthenticated == true)
                 {
-                    <a href="/Identity/Account/Manage" class="icon-button" aria-label="Minha conta">◯</a>
+                    <div class="account-menu">
+                        <a href="/Identity/Account/Manage" class="account-link" aria-label="Minha conta" aria-haspopup="menu">Conta</a>
+                        <div class="account-menu-panel" role="menu">
+                            <form method="post" action="/Identity/Account/Logout?returnUrl=%2F">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="account-menu-action" role="menuitem">Logout</button>
+                            </form>
+                        </div>
+                    </div>
                 }
                 else
                 {
-                    <a href="/Identity/Account/Login" class="icon-button" aria-label="Entrar">◯</a>
+                    <a href="/Identity/Account/Login?ReturnUrl=%2Fcart" class="account-link" aria-label="Entrar">Entrar</a>
                 }
-                <a href="/cart" class="cart-link" aria-label="Carrinho">Carrinho <span>0</span></a>
+                <a href="/cart" class="cart-link" aria-label="Carrinho">Carrinho <span>@cartCount</span></a>
             </div>
         </div>
     </header>
@@ -79,10 +105,35 @@
     </main>
 
     <footer class="site-footer" id="manifesto">
-        <div class="footer-top"><div><a href="/" class="logo logo--footer">shirt<span>store</span><b>.</b></a><p>Design português para dias com mais personalidade.</p></div><div class="footer-links"><a href="/catalog">Camisolas</a><a href="/terms">Termos</a><a href="/privacy">Privacidade</a><a href="/Identity/Account/Register">Newsletter</a></div></div>
-        <div class="footer-bottom"><span>&copy; @DateTime.UtcNow.Year ShirtStore</span><span>Feito em Portugal · Envio para todo o país</span></div>
+        <div class="footer-top"><div><a href="/" class="logo logo--footer">peter<span>milk</span><b>.</b></a><p>Design português para dias com mais personalidade.</p></div><div class="footer-links"><a href="/catalog">Camisolas</a><a href="/terms">Termos</a><a href="/privacy">Privacidade</a><a href="/Identity/Account/Register">Newsletter</a></div></div>
+        <div class="footer-bottom"><span>&copy; @DateTime.UtcNow.Year Peter Milk</span><span>Feito em Portugal · Envio para todo o país</span></div>
     </footer>
 
     @await RenderSectionAsync("Scripts", required: false)
+    <script>
+        (() => {
+            const button = document.querySelector('.mobile-menu');
+            const navigation = document.querySelector('#primary-navigation');
+            if (!button || !navigation) return;
+
+            const closeMenu = () => {
+                button.setAttribute('aria-expanded', 'false');
+                button.setAttribute('aria-label', 'Abrir menu');
+                navigation.classList.remove('is-open');
+            };
+
+            button.addEventListener('click', () => {
+                const isOpen = button.getAttribute('aria-expanded') === 'true';
+                button.setAttribute('aria-expanded', String(!isOpen));
+                button.setAttribute('aria-label', isOpen ? 'Abrir menu' : 'Fechar menu');
+                navigation.classList.toggle('is-open', !isOpen);
+            });
+
+            navigation.querySelectorAll('a').forEach(link => link.addEventListener('click', closeMenu));
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape') closeMenu();
+            });
+        })();
+    </script>
 </body>
 </html>

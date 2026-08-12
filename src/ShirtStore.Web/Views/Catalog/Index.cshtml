@@ -1,6 +1,9 @@
 @model IReadOnlyList<ShirtStore.Domain.Entities.Product>
 @{
-    ViewData["Title"] = ViewData["NoIndex"] as bool? == true ? $"Resultados para \"{ViewData["SearchQuery"]}\"" : "Coleção de camisolas";
+    ViewData["Title"] = ViewData["NoIndex"] as bool? == true ? $"Resultados para \"{ViewData["SearchQuery"]}\"" : "Camisolas portuguesas | Coleção Peter Milk";
+    ViewData["Description"] = ViewData["NoIndex"] as bool? == true
+        ? "Pesquisa camisolas Peter Milk por nome, frase e design."
+        : "Descobre a coleção de camisolas Peter Milk, com algodão pesado e designs portugueses.";
     var noIndex = ViewData["NoIndex"] as bool? ?? false;
     if (noIndex) { ViewData["NoIndex"] = true; }
 }
@@ -31,10 +34,19 @@
 @for (var i = 0; i < Model.Count; i++)
 {
     var p = Model[i];
+    var nameParts = p.Name.Split(" — ", 2, StringSplitOptions.None);
+    var shortName = nameParts[0];
+    var nameSuffix = nameParts.Length > 1 ? nameParts[1] : string.Empty;
     <article class="product-card product-card--editorial">
         <a href="/product/@p.Slug">
             <div class="product-image-wrap"><span class="product-index">@((i + 1).ToString("00"))</span><img src="@p.ImageUrl" alt="@p.Name" loading="lazy" width="500" height="700" /></div>
-            <div class="product-card-copy"><h2>@p.Name</h2><span class="price">@p.BasePrice.ToString("C")</span></div>
+            <div class="product-card-copy">
+                <div class="product-card-meta"><h2>@shortName</h2><span class="price">@p.BasePrice.ToString("C")</span></div>
+                @if (!string.IsNullOrWhiteSpace(nameSuffix))
+                {
+                    <p class="product-card-subtitle">@nameSuffix</p>
+                }
+            </div>
         </a>
     </article>
 }

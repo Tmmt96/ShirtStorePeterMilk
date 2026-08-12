@@ -1,0 +1,83 @@
+@page
+@model Microsoft.AspNetCore.Identity.UI.V5.Pages.Account.Manage.Internal.IndexModel
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    ViewData["Title"] = "Perfil";
+    ViewData["Description"] = "Gere o teu perfil Peter Milk.";
+    ViewData["NoIndex"] = true;
+}
+
+<div class="manage-account">
+    <header class="manage-intro">
+        <p class="eyebrow">A tua conta</p>
+        <h1>O teu perfil.</h1>
+        <p>Gere os teus dados pessoais e mantém a tua conta pronta para a próxima encomenda.</p>
+    </header>
+
+    <div class="manage-layout">
+        <aside class="manage-navigation">
+            <p class="manage-navigation-label">Definições</p>
+            <partial name="_ManageNav" />
+        </aside>
+
+        <section class="manage-panel" aria-labelledby="profile-heading">
+            <p class="identity-kicker">Dados de cliente</p>
+            <h2 id="profile-heading">Perfil</h2>
+            @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+            {
+                <div class="manage-status" role="status">@Model.StatusMessage</div>
+            }
+
+            <form id="profile-form" method="post" class="manage-form">
+                <div asp-validation-summary="ModelOnly" class="identity-errors" role="alert"></div>
+
+                <div class="identity-field identity-field--light">
+                    <label asp-for="Username">Email da conta</label>
+                    <input asp-for="Username" disabled />
+                </div>
+
+                <div class="identity-field identity-field--light">
+                    <label asp-for="Input.PhoneNumber">Telemóvel</label>
+                    <input asp-for="Input.PhoneNumber"
+                           autocomplete="tel"
+                           inputmode="tel"
+                           maxlength="9"
+                           pattern="^[29]\d{8}$"
+                           placeholder="912345678" />
+                    <span asp-validation-for="Input.PhoneNumber"></span>
+                </div>
+
+                <button id="update-profile-button" type="submit" class="btn btn-primary manage-submit">Guardar alterações</button>
+            </form>
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const form = document.getElementById('profile-form');
+            const phone = document.getElementById('Input_PhoneNumber');
+            const message = document.querySelector('[data-valmsg-for="Input.PhoneNumber"]');
+            const pattern = /^[29]\d{8}$/;
+            const errorText = 'Indica um número de telefone português válido.';
+
+            if (!form || !phone) return;
+
+            const validatePhone = () => {
+                const value = phone.value.trim();
+                const valid = !value || pattern.test(value);
+                phone.setCustomValidity(valid ? '' : errorText);
+
+                if (message) {
+                    message.textContent = valid ? '' : errorText;
+                    message.classList.toggle('field-validation-error', !valid);
+                }
+            };
+
+            phone.addEventListener('input', validatePhone);
+            form.addEventListener('submit', validatePhone);
+            validatePhone();
+        })();
+    </script>
+}

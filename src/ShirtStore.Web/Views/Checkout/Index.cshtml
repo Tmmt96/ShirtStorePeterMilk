@@ -1,0 +1,106 @@
+@model ShirtStore.Web.Models.CheckoutViewModel
+@{
+    ViewData["Title"] = "Finalizar compra";
+    ViewData["NoIndex"] = true;
+}
+
+<div class="checkout-header">
+    <p class="eyebrow">Checkout seguro</p>
+    <h1>Finalizar compra</h1>
+    <p>Não precisas de criar uma conta. Preenche os teus dados para receber a encomenda.</p>
+</div>
+
+<div class="checkout-layout">
+    <form method="post" action="/checkout/start" class="checkout-form">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="checkout-errors" role="alert"></div>
+
+        <fieldset class="checkout-section">
+            <legend>Contacto</legend>
+            <div class="checkout-fields checkout-fields--two">
+                <div class="checkout-field">
+                    <label asp-for="CustomerName"></label>
+                    <input asp-for="CustomerName" autocomplete="name" />
+                    <span asp-validation-for="CustomerName"></span>
+                </div>
+                <div class="checkout-field">
+                    <label asp-for="CustomerEmail"></label>
+                    <input asp-for="CustomerEmail" autocomplete="email" />
+                    <span asp-validation-for="CustomerEmail"></span>
+                </div>
+                <div class="checkout-field">
+                    <label asp-for="CustomerPhone"></label>
+                    <input asp-for="CustomerPhone" autocomplete="tel" />
+                    <span asp-validation-for="CustomerPhone"></span>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="checkout-section">
+            <legend>Morada de entrega</legend>
+            <div class="checkout-fields checkout-fields--two">
+                <div class="checkout-field checkout-field--full">
+                    <label asp-for="ShippingAddressLine1"></label>
+                    <input asp-for="ShippingAddressLine1" autocomplete="street-address" />
+                    <span asp-validation-for="ShippingAddressLine1"></span>
+                </div>
+                <div class="checkout-field checkout-field--full">
+                    <label asp-for="ShippingAddressLine2"></label>
+                    <input asp-for="ShippingAddressLine2" autocomplete="address-line2" placeholder="Opcional" />
+                    <span asp-validation-for="ShippingAddressLine2"></span>
+                </div>
+                <div class="checkout-field">
+                    <label asp-for="ShippingPostalCode"></label>
+                    <input asp-for="ShippingPostalCode" autocomplete="postal-code" />
+                    <span asp-validation-for="ShippingPostalCode"></span>
+                </div>
+                <div class="checkout-field">
+                    <label asp-for="ShippingCity"></label>
+                    <input asp-for="ShippingCity" autocomplete="address-level2" />
+                    <span asp-validation-for="ShippingCity"></span>
+                </div>
+                <div class="checkout-field">
+                    <label asp-for="ShippingCountry"></label>
+                    <input asp-for="ShippingCountry" autocomplete="country-name" />
+                    <span asp-validation-for="ShippingCountry"></span>
+                </div>
+                <div class="checkout-field">
+                    <label asp-for="TaxId"></label>
+                    <input asp-for="TaxId" autocomplete="tax-id" placeholder="Opcional" />
+                    <span asp-validation-for="TaxId"></span>
+                </div>
+            </div>
+        </fieldset>
+
+        <div class="checkout-terms">
+            <label>
+                <input asp-for="AcceptTerms" />
+                <span>Li e aceito os <a href="/terms" target="_blank" rel="noreferrer">termos e condições</a>.</span>
+            </label>
+            <span asp-validation-for="AcceptTerms"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary checkout-submit">Continuar para pagamento</button>
+        <a href="/cart" class="checkout-back">Voltar ao carrinho</a>
+    </form>
+
+    <aside class="checkout-summary" aria-label="Resumo da encomenda">
+        <p class="eyebrow">A tua encomenda</p>
+        <h2>Resumo</h2>
+        <ul>
+        @foreach (var item in Model.Cart.Items)
+        {
+            <li>
+                <span>@item.Product.Name <small>@item.Variant.Size / @item.Variant.Color · @item.Quantity ×</small></span>
+                <strong>@((item.UnitPrice * item.Quantity).ToString("C"))</strong>
+            </li>
+        }
+        </ul>
+        <div class="checkout-totals">
+            <p><span>Subtotal</span><strong>@Model.SubTotal.ToString("C")</strong></p>
+            <p><span>Portes</span><strong>@(Model.Shipping == 0 ? "Grátis" : Model.Shipping.ToString("C"))</strong></p>
+            <p class="total"><span>Total</span><strong>@Model.Total.ToString("C")</strong></p>
+        </div>
+        <p class="checkout-note">Pagamento seguro por cartão através do Stripe.</p>
+    </aside>
+</div>

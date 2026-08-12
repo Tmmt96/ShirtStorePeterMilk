@@ -1,0 +1,55 @@
+@page
+@model Microsoft.AspNetCore.Identity.UI.V5.Pages.Account.Internal.RegisterModel
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    ViewData["Title"] = "Criar conta";
+    ViewData["Description"] = "Cria a tua conta Peter Milk.";
+    ViewData["NoIndex"] = true;
+}
+
+<div class="identity-shell">
+    <div class="identity-intro">
+        <p class="eyebrow">Conta Peter Milk</p>
+        <h1>Fica por dentro.</h1>
+        <p>Cria uma conta para guardares os teus dados e acompanhares cada encomenda sem esforço.</p>
+    </div>
+
+    <div class="identity-layout">
+        <section class="identity-panel identity-panel--primary" aria-labelledby="register-heading">
+            <p class="identity-kicker">Nova conta</p>
+            <h2 id="register-heading">Começa aqui.</h2>
+            <p class="identity-panel-copy">Escolhe um email e uma palavra-passe para criares a tua conta.</p>
+
+            <form id="registerForm" method="post" class="identity-form">
+                <div asp-validation-summary="ModelOnly" class="identity-errors" role="alert"></div>
+
+                <div class="identity-field">
+                    <label asp-for="Input.Email">Email</label>
+                    <input asp-for="Input.Email" autocomplete="username" placeholder="nome@exemplo.pt" />
+                    <span asp-validation-for="Input.Email"></span>
+                </div>
+
+                <div class="identity-field">
+                    <label asp-for="Input.Password">Palavra-passe</label>
+                    <input asp-for="Input.Password" autocomplete="new-password" placeholder="Pelo menos 8 caracteres" />
+                    <span asp-validation-for="Input.Password"></span>
+                </div>
+
+                <div class="identity-field">
+                    <label asp-for="Input.ConfirmPassword">Confirmar palavra-passe</label>
+                    <input asp-for="Input.ConfirmPassword" autocomplete="new-password" placeholder="Repete a palavra-passe" />
+                    <span asp-validation-for="Input.ConfirmPassword"></span>
+                </div>
+
+                <button id="registerSubmit" type="submit" class="btn btn-primary identity-submit">Criar conta</button>
+            </form>
+        </section>
+
+        <aside class="identity-panel identity-panel--secondary" aria-labelledby="account-benefits-heading">
+            <p class="identity-kicker">O que ganhas</p>
+            <h2 id="account-benefits-heading">Menos passos. Mais conversa.</h2>
+            <p class="identity-panel-copy">Os teus dados ficam prontos para a próxima compra e podes acompanhar o estado das encomendas.</p>
+            <a class="identity-secondary-action btn btn-secondary" asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">Já tenho conta</a>
+        </aside>
+    </div>
+</div>

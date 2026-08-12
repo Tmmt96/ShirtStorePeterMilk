@@ -1,0 +1,16 @@
+@{
+    var path = Context.Request.Path;
+    var isProfile = path.Equals("/Identity/Account/Manage", StringComparison.OrdinalIgnoreCase);
+    var isEmail = path.StartsWithSegments("/Identity/Account/Manage/Email");
+    var isPassword = path.StartsWithSegments("/Identity/Account/Manage/ChangePassword");
+    var isSecurity = path.StartsWithSegments("/Identity/Account/Manage/TwoFactorAuthentication");
+    var isPersonalData = path.StartsWithSegments("/Identity/Account/Manage/PersonalData");
+}
+
+<nav class="account-nav" aria-label="Navegação da conta">
+    <a class="@(isProfile ? "is-active" : string.Empty)" id="profile" href="/Identity/Account/Manage">Perfil</a>
+    <a class="@(isEmail ? "is-active" : string.Empty)" id="email" href="/Identity/Account/Manage/Email">Email</a>
+    <a class="@(isPassword ? "is-active" : string.Empty)" id="change-password" href="/Identity/Account/Manage/ChangePassword">Palavra-passe</a>
+    <a class="@(isSecurity ? "is-active" : string.Empty)" id="two-factor" href="/Identity/Account/Manage/TwoFactorAuthentication">Segurança</a>
+    <a class="@(isPersonalData ? "is-active" : string.Empty)" id="personal-data" href="/Identity/Account/Manage/PersonalData">Dados pessoais</a>
+</nav>

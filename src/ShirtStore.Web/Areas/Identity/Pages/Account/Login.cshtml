@@ -1,0 +1,55 @@
+@page
+@model Microsoft.AspNetCore.Identity.UI.V5.Pages.Account.Internal.LoginModel
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    ViewData["Title"] = "Entrar";
+    ViewData["Description"] = "Entra na tua conta Peter Milk.";
+    ViewData["NoIndex"] = true;
+}
+
+<div class="identity-shell">
+    <div class="identity-intro">
+        <p class="eyebrow">Conta Peter Milk</p>
+        <h1>Entra para continuar.</h1>
+        <p>Guarda os teus dados, acompanha encomendas e volta aos teus designs favoritos.</p>
+    </div>
+
+    <div class="identity-layout">
+        <section class="identity-panel identity-panel--primary" aria-labelledby="login-heading">
+            <p class="identity-kicker">A tua conta</p>
+            <h2 id="login-heading">Bem-vindo de volta.</h2>
+            <p class="identity-panel-copy">Usa o email associado à tua conta para entrares na loja.</p>
+
+            <form id="account" method="post" class="identity-form">
+                <div asp-validation-summary="ModelOnly" class="identity-errors" role="alert"></div>
+
+                <div class="identity-field">
+                    <label asp-for="Input.Email">Email</label>
+                    <input asp-for="Input.Email" autocomplete="username" placeholder="nome@exemplo.pt" />
+                    <span asp-validation-for="Input.Email"></span>
+                </div>
+
+                <div class="identity-field">
+                    <label asp-for="Input.Password">Palavra-passe</label>
+                    <input asp-for="Input.Password" autocomplete="current-password" placeholder="A tua palavra-passe" />
+                    <span asp-validation-for="Input.Password"></span>
+                </div>
+
+                <label class="identity-check">
+                    <input asp-for="Input.RememberMe" />
+                    <span>Lembrar-me neste dispositivo</span>
+                </label>
+
+                <button id="login-submit" type="submit" class="btn btn-primary identity-submit">Entrar</button>
+            </form>
+        </section>
+
+        <aside class="identity-panel identity-panel--secondary" aria-labelledby="new-account-heading">
+            <p class="identity-kicker">Ainda não tens conta?</p>
+            <h2 id="new-account-heading">Fica por dentro.</h2>
+            <p class="identity-panel-copy">Cria uma conta para tornares as próximas compras mais simples.</p>
+            <a class="btn btn-secondary identity-secondary-action" asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl">Registo</a>
+            <a class="identity-text-link" asp-page="./ForgotPassword">Esqueceste-te da palavra-passe?</a>
+        </aside>
+    </div>
+</div>

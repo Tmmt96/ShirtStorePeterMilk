@@ -4,6 +4,7 @@ using Stripe.Checkout;
 using ShirtStore.Domain.Interfaces;
 using ShirtStore.Domain.Entities;
 using ShirtStore.Domain.Enums;
+using ShirtStore.Web.Models;
 
 namespace ShirtStore.Web.Controllers;
 
@@ -14,47 +15,96 @@ public class CheckoutController : Controller
 {
     private readonly IUnitOfWork _uow;
     private readonly IEmailSender _email;
-    public CheckoutController(IUnitOfWork uow, IEmailSender email)
+    private readonly IConfiguration _configuration;
+
+    public CheckoutController(IUnitOfWork uow, IEmailSender email, IConfiguration configuration)
     {
-        _uow   = uow;
-        _email = email;
+        _uow           = uow;
+        _email         = email;
+        _configuration = configuration;
     }
 
-    /// <summary>Inicia checkout — cria sessão Stripe e redireciona.</summary>
+    /// <summary>Apresenta o checkout de convidado.</summary>
+    [HttpGet("/checkout")]
+    public async Task<IActionResult> Index(CancellationToken ct)
+    {
+        var cart = await GetCurrentCartAsync(ct);
+        if (cart is null || !cart.Items.Any())
+            return RedirectToAction(nameof(CartController.Index), "Cart");
+
+        var model = CreateCheckoutModel(cart);
+        model.CustomerName = User.Identity?.IsAuthenticated == true
+            ? $"{User.FindFirst("given_name")?.Value} {User.FindFirst("family_name")?.Value}".Trim()
+            : string.Empty;
+        model.CustomerEmail = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? string.Empty;
+        return View(model);
+    }
+
+    /// <summary>Valida os dados do checkout, cria a encomenda e redireciona para o pagamento.</summary>
     [HttpPost("/checkout/start")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Start(CancellationToken ct)
+    public async Task<IActionResult> Start(CheckoutViewModel model, CancellationToken ct)
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        Cart? cart = null;
-
-        if (!string.IsNullOrEmpty(userId))
-            cart = await _uow.Carts.GetByUserIdAsync(userId, ct);
-
-        if (cart is null)
-        {
-            var token = Request.Cookies["cart_token"];
-            if (!string.IsNullOrEmpty(token))
-                cart = await _uow.Carts.GetByTokenAsync(token, ct);
-        }
+        var cart = await GetCurrentCartAsync(ct);
 
         if (cart is null || !cart.Items.Any())
             return RedirectToAction(nameof(CartController.Index), "Cart");
 
+        model.Cart = cart;
+        if (!ModelState.IsValid)
+        {
+            PopulateSummary(model, cart);
+            return View("Index", model);
+        }
+
+        if (string.IsNullOrWhiteSpace(_configuration["Stripe:SecretKey"]))
+        {
+            ModelState.AddModelError(string.Empty, "O pagamento está temporariamente indisponível enquanto o checkout não está configurado.");
+            PopulateSummary(model, cart);
+            return View("Index", model);
+        }
+
+        var checkoutItems = new List<(CartItem Item, ProductVariant Variant)>();
+        foreach (var item in cart.Items)
+        {
+            var variant = await _uow.Variants.GetByIdAsync(item.ProductVariantId, ct);
+            if (variant is null || !variant.IsActive || item.Quantity < 1 || item.Quantity > variant.AvailableStock)
+            {
+                ModelState.AddModelError(string.Empty, $"A variante de {item.Product.Name} já não tem stock suficiente.");
+                PopulateSummary(model, cart);
+                return View("Index", model);
+            }
+
+            checkoutItems.Add((item, variant));
+        }
+
         // ── Calcular totais no servidor (nunca confiar no browser) ───────────
-        decimal subTotal = cart.Items.Sum(i => i.UnitPrice * i.Quantity);
+        decimal subTotal = checkoutItems.Sum(x => x.Variant.Price * x.Item.Quantity);
         decimal shipping = subTotal >= 50 ? 0 : 4.99m;   // portes grátis acima de €50
         decimal tax      = 0m;                            // TODO: calcular IVA por país
         decimal total    = subTotal + shipping + tax;
 
         // ── Criar encomenda pendente ─────────────────────────────────────────
-        var orderNumber = $"ORD-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid():N}".Substring(0, 16).ToUpper();
+        var orderNumber = $"ORD-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..8]}".ToUpperInvariant();
         var order = new Order
         {
             OrderNumber   = orderNumber,
             UserId        = userId,
-            CustomerEmail = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "",
-            CustomerName  = $"{User.FindFirst("given_name")?.Value} {User.FindFirst("family_name")?.Value}".Trim(),
+            CustomerEmail = model.CustomerEmail.Trim(),
+            CustomerName  = model.CustomerName.Trim(),
+            CustomerPhone = model.CustomerPhone.Trim(),
+            BillingAddressLine1 = model.ShippingAddressLine1.Trim(),
+            BillingAddressLine2 = model.ShippingAddressLine2?.Trim(),
+            BillingCity = model.ShippingCity.Trim(),
+            BillingPostalCode = model.ShippingPostalCode.Trim(),
+            BillingCountry = model.ShippingCountry.Trim(),
+            BillingTaxId = model.TaxId?.Trim(),
+            ShippingAddressLine1 = model.ShippingAddressLine1.Trim(),
+            ShippingAddressLine2 = model.ShippingAddressLine2?.Trim(),
+            ShippingCity = model.ShippingCity.Trim(),
+            ShippingPostalCode = model.ShippingPostalCode.Trim(),
+            ShippingCountry = model.ShippingCountry.Trim(),
             SubTotal      = subTotal,
             Shipping      = shipping,
             Tax           = tax,
@@ -63,10 +113,10 @@ public class CheckoutController : Controller
             Status        = OrderStatus.PendingPayment
         };
 
-        foreach (var item in cart.Items)
+        foreach (var checkoutItem in checkoutItems)
         {
-            var variant = await _uow.Variants.GetByIdAsync(item.ProductVariantId, ct);
-            if (variant is null) continue;
+            var item = checkoutItem.Item;
+            var variant = checkoutItem.Variant;
 
             order.Items.Add(new OrderItem
             {
@@ -77,7 +127,7 @@ public class CheckoutController : Controller
                 VariantSize     = variant.Size,
                 VariantColor    = variant.Color,
                 Quantity        = item.Quantity,
-                UnitPrice       = item.UnitPrice
+                UnitPrice        = variant.Price
             });
 
             // Reservar stock
@@ -124,6 +174,35 @@ public class CheckoutController : Controller
         await _uow.SaveChangesAsync(ct);
 
         return Redirect(session.Url!);
+    }
+
+    private async Task<Cart?> GetCurrentCartAsync(CancellationToken ct)
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            var userCart = await _uow.Carts.GetByUserIdAsync(userId, ct);
+            if (userCart is not null)
+                return userCart;
+        }
+
+        var token = Request.Cookies["cart_token"];
+        return string.IsNullOrEmpty(token) ? null : await _uow.Carts.GetByTokenAsync(token, ct);
+    }
+
+    private static CheckoutViewModel CreateCheckoutModel(Cart cart)
+    {
+        var model = new CheckoutViewModel();
+        PopulateSummary(model, cart);
+        return model;
+    }
+
+    private static void PopulateSummary(CheckoutViewModel model, Cart cart)
+    {
+        model.Cart = cart;
+        model.SubTotal = cart.Items.Sum(item => item.UnitPrice * item.Quantity);
+        model.Shipping = model.SubTotal >= 50 ? 0 : 4.99m;
+        model.Total = model.SubTotal + model.Shipping;
     }
 
     /// <summary>Página de sucesso — aguarda confirmação do webhook.</summary>
@@ -183,6 +262,7 @@ public class CheckoutController : Controller
         var order = await _uow.Orders.GetByCheckoutSessionIdAsync(session.Id, ct);
 
         if (order is null) return;
+        if (order.Status == OrderStatus.Paid) return;
 
         order.Status = OrderStatus.Paid;
         order.StripePaymentIntentId = session.PaymentIntentId;

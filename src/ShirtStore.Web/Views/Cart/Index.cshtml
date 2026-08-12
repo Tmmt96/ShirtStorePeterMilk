@@ -6,12 +6,20 @@
 
 <h1>Carrinho</h1>
 
+@if (TempData["CartError"] is string cartError)
+{
+    <div class="cart-message" role="alert">
+        <span>@cartError</span>
+    </div>
+}
+
 @if (!Model.Items.Any())
 {
-    <p>O teu carrinho está vazio. <a href="/catalog">Ver catálogo</a></p>
+    <p class="cart-empty">O teu carrinho está vazio. <a href="/catalog">Ver catálogo</a></p>
     return;
 }
 
+<div class="cart-table-wrap">
 <table class="cart-table">
     <thead>
         <tr>
@@ -27,21 +35,29 @@
     @foreach (var item in Model.Items)
     {
         <tr>
-            <td>@item.Product.Name</td>
-            <td>@item.Variant.Size / @item.Variant.Color</td>
-            <td>@item.UnitPrice.ToString("C")</td>
-            <td>@item.Quantity</td>
-            <td>@((item.UnitPrice * item.Quantity).ToString("C"))</td>
-            <td>
+            <td data-label="Produto">@item.Product.Name</td>
+            <td data-label="Variante">@item.Variant.Size / @item.Variant.Color</td>
+            <td data-label="Preço">@item.UnitPrice.ToString("C")</td>
+            <td data-label="Quantidade">
+                <form method="post" action="/cart/update/@item.Id" class="cart-quantity-form">
+                    @Html.AntiForgeryToken()
+                    <label class="sr-only" for="quantity-@item.Id">Quantidade de @item.Product.Name</label>
+                    <input id="quantity-@item.Id" name="quantity" type="number" min="1" max="@item.Variant.AvailableStock" value="@item.Quantity" />
+                    <button type="submit" class="sr-only">Actualizar quantidade</button>
+                </form>
+            </td>
+            <td data-label="Total">@((item.UnitPrice * item.Quantity).ToString("C"))</td>
+            <td data-label="">
                 <form method="post" action="/cart/remove/@item.Id" style="display:inline">
                     @Html.AntiForgeryToken()
-                    <button type="submit" class="btn-remove">✕</button>
+                    <button type="submit" class="btn-remove" aria-label="Remover @item.Product.Name">✕</button>
                 </form>
             </td>
         </tr>
     }
     </tbody>
 </table>
+</div>
 
 @{
     var subTotal = Model.Items.Sum(i => i.UnitPrice * i.Quantity);
@@ -54,7 +70,27 @@
     <p class="total">Total: <strong>@total.ToString("C")</strong></p>
 </div>
 
-<form method="post" action="/checkout/start">
-    @Html.AntiForgeryToken()
-    <button type="submit" class="btn btn-primary btn-checkout">Finalizar Compra</button>
-</form>
+<a href="/checkout" class="btn btn-primary btn-checkout">Finalizar Compra</a>
+
+@section Scripts {
+    <script>
+        (() => {
+            document.querySelectorAll('.cart-quantity-form').forEach(form => {
+                const input = form.querySelector('input[name="quantity"]');
+                if (!input) return;
+
+                let submittedValue = input.value;
+                input.addEventListener('change', () => {
+                    if (input.value === submittedValue || !input.checkValidity()) return;
+
+                    submittedValue = input.value;
+                    input.readOnly = true;
+                    form.classList.add('is-updating');
+                    form.setAttribute('aria-busy', 'true');
+                    form.requestSubmit();
+                });
+            });
+
+        })();
+    </script>
+}

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ShirtStore.Domain.Entities;
 using ShirtStore.Infrastructure.Data;
+using ShirtStore.Web.Filters;
 using Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,8 @@ builder.Services.AddControllers()
     .AddRazorPagesOptions(options =>
     {
         options.Conventions.AuthorizeFolder("/Account");
+        options.Conventions.AddPageApplicationModelConvention("/Account/Manage/Index", model =>
+            model.Filters.Add(new PortuguesePhoneNumberValidationFilter()));
     });
 
 builder.Services.AddRazorPages();
@@ -103,8 +106,9 @@ app.MapGet("/robots.txt", async context =>
         User-agent: *
         Allow: /
         Disallow: /Account/
-        Disallow: /Cart/
-        Disallow: /Checkout/
+        Disallow: /Identity/Account/
+        Disallow: /cart/
+        Disallow: /checkout/
         Sitemap: {sitemapUrl}
         """.Replace("{sitemapUrl}", $"{context.Request.Scheme}://{context.Request.Host}/sitemap.xml"));
 });
@@ -123,7 +127,7 @@ app.MapGet("/sitemap.xml", async context =>
     xml.AppendLine(@"<urlset xmlns=""http://www.sitemaps.org/schemas/sitemap/0.9"">");
 
     // Páginas estáticas
-    var staticPages = new[] { "/", "/catalog", "/about", "/terms", "/privacy" };
+    var staticPages = new[] { "/", "/catalog", "/terms", "/privacy" };
     foreach (var page in staticPages)
     {
         xml.AppendLine($"  <url><loc>{baseUrl}{page}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>");
@@ -154,7 +158,19 @@ app.Run();
 static async Task SeedCatalogAsync(AppDbContext db)
 {
     if (await db.Products.AnyAsync())
+    {
+        var legacyProducts = await db.Products
+            .Where(product => product.SeoTitle != null && product.SeoTitle.Contains("ShirtStore"))
+            .ToListAsync();
+
+        foreach (var product in legacyProducts)
+            product.SeoTitle = product.SeoTitle!.Replace("ShirtStore", "Peter Milk", StringComparison.Ordinal);
+
+        if (legacyProducts.Count > 0)
+            await db.SaveChangesAsync();
+
         return;
+    }
 
     var catalog = new[]
     {
@@ -179,7 +195,7 @@ static async Task SeedCatalogAsync(AppDbContext db)
             ImageUrl = $"/images/catalog/{item.Image}",
             Category = "Coleção Peter Milk",
             Tags = item.Tags,
-            SeoTitle = $"{item.Name} | ShirtStore",
+            SeoTitle = $"{item.Name} | Peter Milk",
             SeoDescription = item.Description,
             BasePrice = 19.90m,
             Currency = "EUR",
