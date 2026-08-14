@@ -1,0 +1,10 @@
+{
+    "name": "shirtstore-ux-tests",
+    "private": true,
+    "scripts": {
+        "test": "node user-experience.spec.js"
+    },
+    "dependencies": {
+        "playwright": "1.39.0"
+    }
+}
