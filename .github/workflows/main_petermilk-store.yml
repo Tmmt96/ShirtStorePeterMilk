@@ -29,6 +29,11 @@ jobs:
       - name: dotnet publish
         run: dotnet publish src/ShirtStore.Web/ShirtStore.Web.csproj -c Release --no-build -o ${{github.workspace}}/publish
 
+      - name: Verify publish contents
+        run: |
+          test -f ${{github.workspace}}/publish/ShirtStore.Web.dll
+          test -f ${{github.workspace}}/publish/Mono.Cecil.dll
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
