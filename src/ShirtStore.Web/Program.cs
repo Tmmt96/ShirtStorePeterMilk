@@ -28,7 +28,8 @@ builder.Services.AddRazorPages();
 
 // ── EF Core ────────────────────────────────────────────────────────────────
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-                       ?? "Server=(localdb)\\mssqllocaldb;Database=ShirtStore;Trusted_Connection=True;MultipleActiveResultSets=true";
+                       ?? throw new InvalidOperationException(
+                           "ConnectionStrings:DefaultConnection não está configurada.");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString, sql =>
