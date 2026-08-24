@@ -78,13 +78,12 @@ builder.Services.AddScoped<SignInManager<ApplicationUser>>(services =>
 });
 
 // ── Stripe ─────────────────────────────────────────────────────────────────
-var stripeKey = string.IsNullOrWhiteSpace(builder.Configuration["Stripe:SecretKey"])
-                ? (builder.Environment.IsDevelopment()
-                   ? "sk_test_placeholder"
-                   : throw new InvalidOperationException("Stripe:SecretKey não configurado."))
-                : builder.Configuration["Stripe:SecretKey"]!;
-StripeConfiguration.ApiKey = stripeKey;
-builder.Services.AddSingleton(new StripeClient(StripeConfiguration.ApiKey));
+var stripeKey = builder.Configuration["Stripe:SecretKey"];
+if (!string.IsNullOrWhiteSpace(stripeKey))
+{
+    StripeConfiguration.ApiKey = stripeKey;
+    builder.Services.AddSingleton(new StripeClient(stripeKey));
+}
 
 // ── Email (abstração) ──────────────────────────────────────────────────────
 // TODO: registar implementação concreta (Brevo / Resend / SMTP) na fase de email.
