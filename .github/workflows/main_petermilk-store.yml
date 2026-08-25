@@ -23,16 +23,29 @@ jobs:
         with:
           dotnet-version: '10.x'
 
+      - name: Restore dependencies
+        run: dotnet restore src/ShirtStore.Web/ShirtStore.Web.csproj
+
       - name: Build with dotnet
-        run: dotnet build src/ShirtStore.Web/ShirtStore.Web.csproj --configuration Release
+        run: dotnet build src/ShirtStore.Web/ShirtStore.Web.csproj --configuration Release --no-restore
 
       - name: dotnet publish
-        run: dotnet publish src/ShirtStore.Web/ShirtStore.Web.csproj -c Release --no-build -o ${{github.workspace}}/publish
+        run: dotnet publish src/ShirtStore.Web/ShirtStore.Web.csproj -c Release --no-restore -o ${{github.workspace}}/publish
 
       - name: Verify publish contents
+        shell: bash
         run: |
-          test -f ${{github.workspace}}/publish/ShirtStore.Web.dll
-          test -f ${{github.workspace}}/publish/Mono.Cecil.dll
+          test -f "${{github.workspace}}/publish/ShirtStore.Web.dll"
+          test -f "${{github.workspace}}/publish/Mono.Cecil.dll"
+          if find "${{github.workspace}}/publish" -type f \( -iname '*Tests.dll' -o -iname '*Test.dll' \) | grep -q .; then
+            echo "Test assemblies must not be published"
+            find "${{github.workspace}}/publish" -type f \( -iname '*Tests.dll' -o -iname '*Test.dll' \)
+            exit 1
+          fi
+          if grep -R -a -q 'ShirtStore.IntegrationTests' "${{github.workspace}}/publish"; then
+            echo "Publish output contains a reference to ShirtStore.IntegrationTests"
+            exit 1
+          fi
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
