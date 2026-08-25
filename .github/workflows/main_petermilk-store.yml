@@ -80,4 +80,7 @@ jobs:
           app-name: 'petermilk-store'
           slot-name: 'Production'
           package: .
+          target-path: '/home/site/wwwroot'
+          clean: true
+          restart: true
           
